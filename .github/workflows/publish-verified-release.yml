@@ -1,0 +1,111 @@
+name: Publish verified Windows distribution
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_url:
+        description: Short-lived download URL for the verified binary artifact
+        required: true
+        type: string
+      artifact_sha256:
+        description: GitHub Actions artifact SHA256
+        required: true
+        type: string
+      source_commit:
+        description: Commit recorded by the verified build
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: public-distribution
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify and publish the binary distribution
+        env:
+          ARTIFACT_URL: ${{ inputs.artifact_url }}
+          ARTIFACT_SHA256: ${{ inputs.artifact_sha256 }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          GH_TOKEN: ${{ github.token }}
+          DISTRIBUTION_REPOSITORY: ${{ github.repository }}
+        shell: python
+        run: |
+          import hashlib,json,os,re,subprocess,urllib.request,urllib.parse,zipfile
+          from pathlib import Path
+          url=os.environ['ARTIFACT_URL']
+          print('::add-mask::'+url,flush=True)
+          parsed=urllib.parse.urlsplit(url)
+          assert parsed.scheme=='https' and re.fullmatch(r'productionresults[a-z0-9]+\.blob\.core\.windows\.net',parsed.hostname or '')
+          assert not parsed.username and not parsed.password and parsed.port in (None,443)
+          assert parsed.path.startswith('/actions-results/') and not parsed.fragment
+          expected=os.environ['ARTIFACT_SHA256'].removeprefix('sha256:')
+          assert re.fullmatch('[0-9a-f]{64}',expected)
+          assert re.fullmatch('[0-9a-f]{40}',os.environ['SOURCE_COMMIT'])
+          repo=os.environ['DISTRIBUTION_REPOSITORY']
+          assert repo=='alexisnoh37-cell/streambrief-releases'
+          archive=Path('verified-distribution.zip')
+          digest=hashlib.sha256();size=0
+          try:
+              with urllib.request.urlopen(url,timeout=90) as response,archive.open('wb') as output:
+                  for block in iter(lambda:response.read(1024**2),b''):
+                      size+=len(block)
+                      assert size<1536*1024**2
+                      output.write(block);digest.update(block)
+          except Exception:
+              raise SystemExit('Verified artifact could not be downloaded; no release was published.') from None
+          assert digest.hexdigest()==expected,'Artifact SHA256 mismatch'
+          folder=Path('distribution');folder.mkdir()
+          static={'SHA256SUMS.txt','release-metadata.json','사용안내.html','사용안내.md','검증결과.json'}
+          with zipfile.ZipFile(archive) as bundle:
+              names=bundle.namelist()
+              assert len(names)==7 and len(set(names))==7
+              assert all(n in static or re.fullmatch(r'StreamBrief-\d+\.\d+(?:\.\d+)?-(Setup|Update)\.exe',n) for n in names)
+              assert sum(i.file_size for i in bundle.infolist())<1536*1024**2
+              bundle.extractall(folder)
+          metadata=json.loads((folder/'release-metadata.json').read_text(encoding='utf-8-sig'))
+          version=metadata['version'];display=metadata['display_version']
+          assert re.fullmatch(r'\d+\.\d+\.\d+',version)
+          assert metadata['distribution_repository']==repo and metadata['source_commit']==os.environ['SOURCE_COMMIT']
+          assert set(metadata['files'])=={f'StreamBrief-{display}-Setup.exe',f'StreamBrief-{display}-Update.exe'}
+          report=json.loads((folder/'검증결과.json').read_text(encoding='utf-8-sig'))
+          checks=['ok','installed_exe_self_check','frozen_tk_and_local_web_server','frozen_readonly_mcp_gateway','native_small_and_turbo_smoke','aac_ts_and_mp4_audio_conversion','update_preserved_transcript_and_memo','update_preserved_ai_identity','uninstall_preserved_records_and_models','real_update_handoff_waited_for_exit','failed_update_preserved_program','application_update_excludes_model_payload']
+          assert all(report.get(key) is True for key in checks)
+          local={}
+          for path in folder.iterdir():
+              with path.open('rb') as stream:local[path.name]=hashlib.file_digest(stream,'sha256').hexdigest()
+          for name,entry in metadata['files'].items():
+              assert (folder/name).stat().st_size==entry['bytes'] and local[name]==entry['sha256']
+              assert f'{local[name]}  {name}' in (folder/'SHA256SUMS.txt').read_text(encoding='ascii')
+          def gh(*args):
+              result=subprocess.run(['gh',*args],capture_output=True,text=True)
+              if result.returncode:raise RuntimeError(result.stderr[:1000])
+              return result.stdout
+          tag='v'+version
+          releases=json.loads(gh('api',f'repos/{repo}/releases'))
+          assert not any(r['tag_name']==tag for r in releases),'Published versions are never overwritten'
+          notes=Path('release-notes.md')
+          notes.write_text(f'''StreamBrief {display}
+
+          - 최초 설치: StreamBrief-{display}-Setup.exe를 실행하세요. 프로그램·실행 도구·Small·Large 모델을 모두 포함합니다.
+          - 실행 창에서 회의 기록 화면, 사용방법, 저장 폴더와 현재 버전·최신 버전을 확인할 수 있습니다.
+          - 다음 버전은 실행 창의 업데이트 버튼으로 적용합니다. 모델을 다시 받지 않으며 기록·메모·AI 연결 설정을 보존합니다.
+          - 다운로드 SHA256 검증, 앱 종료 대기, 새 프로그램 검증과 교체 실패 시 기존 프로그램 보존을 적용했습니다.
+          - 튜토리얼과 GPT·Claude 연결 안내, AI 공유 버튼 위치 도움말을 포함합니다.
+
+          사용안내.html을 내려받아 열면 명령어 입력 없이 설치·실행·기록·저장·연결·업데이트 방법을 볼 수 있습니다. 기존 폴더로 실행하던 분은 안내서의 기록 이전 절차를 먼저 확인하세요.
+
+          Windows 실제 설치·업데이트·두 모델의 짧은 음성 인식·자료 보존 자동 검증을 통과했습니다. 설치 파일은 미서명입니다. 실제 8GB PC 장시간 사용과 실제 GPT·Claude 계정 연결은 별도 확인 대상입니다.
+          ''',encoding='utf-8')
+          gh('release','create',tag,'--repo',repo,'--target','main','--draft','--title','StreamBrief '+display,'--notes-file',str(notes))
+          gh('release','upload',tag,'--repo',repo,*[str(p) for p in sorted(folder.iterdir())])
+          release=json.loads(gh('api',f'repos/{repo}/releases/tags/{tag}'))
+          assert len(release['assets'])==len(local)
+          for asset in release['assets']:
+              assert asset['name'] in local and asset['digest']=='sha256:'+local[asset['name']],asset['name']
+          gh('release','edit',tag,'--repo',repo,'--draft=false','--latest')
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as summary:
+              summary.write(f"Published: {release['html_url']}\n\nArchive, both executables, all upload digests and Windows checks verified.\n")
+          print(json.dumps({'published':release['html_url'],'checks':{key:True for key in checks},'files':metadata['files']},ensure_ascii=False))
