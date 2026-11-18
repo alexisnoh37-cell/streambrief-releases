@@ -58,19 +58,23 @@ jobs:
               raise SystemExit('Verified artifact could not be downloaded; no release was published.') from None
           assert digest.hexdigest()==expected,'Artifact SHA256 mismatch'
           folder=Path('distribution');folder.mkdir()
-          static={'SHA256SUMS.txt','release-metadata.json','사용안내.html','사용안내.md','검증결과.json'}
+          static={'SHA256SUMS.txt','release-metadata.json','사용안내.html','사용안내.md','검증결과.json','StreamBrief-User-Guide.html','StreamBrief-User-Guide.md','StreamBrief-Validation.json'}
           with zipfile.ZipFile(archive) as bundle:
               names=bundle.namelist()
               assert len(names)==7 and len(set(names))==7
               assert all(n in static or re.fullmatch(r'StreamBrief-\d+\.\d+(?:\.\d+)?-(Setup|Update)\.exe',n) for n in names)
               assert sum(i.file_size for i in bundle.infolist())<1536*1024**2
               bundle.extractall(folder)
+          for old,new in [('사용안내.html','StreamBrief-User-Guide.html'),('사용안내.md','StreamBrief-User-Guide.md'),('검증결과.json','StreamBrief-Validation.json')]:
+              if (folder/old).exists():
+                  assert not (folder/new).exists()
+                  (folder/old).rename(folder/new)
           metadata=json.loads((folder/'release-metadata.json').read_text(encoding='utf-8-sig'))
           version=metadata['version'];display=metadata['display_version']
           assert re.fullmatch(r'\d+\.\d+\.\d+',version)
           assert metadata['distribution_repository']==repo and metadata['source_commit']==os.environ['SOURCE_COMMIT']
           assert set(metadata['files'])=={f'StreamBrief-{display}-Setup.exe',f'StreamBrief-{display}-Update.exe'}
-          report=json.loads((folder/'검증결과.json').read_text(encoding='utf-8-sig'))
+          report=json.loads((folder/'StreamBrief-Validation.json').read_text(encoding='utf-8-sig'))
           checks=['ok','installed_exe_self_check','frozen_tk_and_local_web_server','frozen_readonly_mcp_gateway','native_small_and_turbo_smoke','aac_ts_and_mp4_audio_conversion','update_preserved_transcript_and_memo','update_preserved_ai_identity','uninstall_preserved_records_and_models','real_update_handoff_waited_for_exit','failed_update_preserved_program','application_update_excludes_model_payload']
           assert all(report.get(key) is True for key in checks)
           local={}
@@ -95,13 +99,15 @@ jobs:
           - 다운로드 SHA256 검증, 앱 종료 대기, 새 프로그램 검증과 교체 실패 시 기존 프로그램 보존을 적용했습니다.
           - 튜토리얼과 GPT·Claude 연결 안내, AI 공유 버튼 위치 도움말을 포함합니다.
 
-          사용안내.html을 내려받아 열면 명령어 입력 없이 설치·실행·기록·저장·연결·업데이트 방법을 볼 수 있습니다. 기존 폴더로 실행하던 분은 안내서의 기록 이전 절차를 먼저 확인하세요.
+          StreamBrief-User-Guide.html을 내려받아 열면 명령어 입력 없이 설치·실행·기록·저장·연결·업데이트 방법을 볼 수 있습니다. 기존 폴더로 실행하던 분은 안내서의 기록 이전 절차를 먼저 확인하세요.
 
           Windows 실제 설치·업데이트·두 모델의 짧은 음성 인식·자료 보존 자동 검증을 통과했습니다. 설치 파일은 미서명입니다. 실제 8GB PC 장시간 사용과 실제 GPT·Claude 계정 연결은 별도 확인 대상입니다.
           ''',encoding='utf-8')
           gh('release','create',tag,'--repo',repo,'--target','main','--draft','--title','StreamBrief '+display,'--notes-file',str(notes))
           gh('release','upload',tag,'--repo',repo,*[str(p) for p in sorted(folder.iterdir())])
-          release=json.loads(gh('api',f'repos/{repo}/releases/tags/{tag}'))
+          matching=[r for r in json.loads(gh('api',f'repos/{repo}/releases?per_page=100')) if r['tag_name']==tag]
+          assert len(matching)==1
+          release=matching[0]
           assert len(release['assets'])==len(local)
           for asset in release['assets']:
               assert asset['name'] in local and asset['digest']=='sha256:'+local[asset['name']],asset['name']
