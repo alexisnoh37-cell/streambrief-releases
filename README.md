@@ -7,8 +7,10 @@
 - 처음 사용할 때는 [최신 배포 페이지](https://github.com/alexisnoh37-cell/streambrief-releases/releases/latest)의 **StreamBrief-버전-Setup.exe**를 받으세요. Small·Large 모델과 필요한 실행 도구가 포함됩니다.
 - 이후 새 버전은 StreamBrief 실행 창의 **업데이트 확인 → 업데이트**로 받습니다. 회의 기록·메모·모델·AI 연결 설정은 보존합니다.
 - **Update.exe는 기존에 설치한 프로그램의 업데이트용**입니다. 처음 설치할 때는 Setup.exe를 선택하세요.
+- [항목별 사용 가이드(HTML) 다운로드](https://github.com/alexisnoh37-cell/streambrief-releases/releases/latest/download/StreamBrief-User-Guide.html): 내려받아 더블클릭하면 목차별 안내·검색·AI 연결 순서를 볼 수 있습니다. 인터넷 없이도 열 수 있습니다.
 - 사용방법과 SHA256 체크섬, 검증 보고서는 각 배포 페이지에 포함합니다. 설치 폴더의 licenses에서 포함된 구성품의 라이선스를 확인할 수 있습니다.
 
 이 저장소에는 배포 파일과 사용 안내만 제공합니다. 소스와 사용자 회의 기록은 업로드하지 않습니다.
 
 자동 회의 기록의 이름·수치·누락 여부는 원음과 대조해 검토하세요. 기관의 보안 정책에 의해 실행이 차단되면 담당자에게 문의하세요.
+

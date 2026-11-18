@@ -1,0 +1,85 @@
+name: Update release user guide
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing published release tag
+        required: true
+        default: v1.0.9
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: release-guide-update
+  cancel-in-progress: false
+jobs:
+  guide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace the HTML guide and preserve previous guides
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+        shell: python
+        run: |
+          import hashlib,html,json,os,re,subprocess
+          from pathlib import Path
+          repo=os.environ['REPOSITORY'];tag=os.environ['RELEASE_TAG']
+          assert repo=='alexisnoh37-cell/streambrief-releases'
+          assert re.fullmatch(r'v\d+\.\d+\.\d+',tag)
+          version=tag[1:];major,minor,patch=map(int,version.split('.'))
+          display=f'{major}.{patch:02d}' if minor==0 else version
+          def gh(*args):
+              result=subprocess.run(['gh',*args],capture_output=True,text=True)
+              if result.returncode:raise RuntimeError(result.stderr[:1000])
+              return result.stdout
+          def fetch():return json.loads(gh('api',f'repos/{repo}/releases/tags/{tag}'))
+          release=fetch();assert not release['draft'] and not release['prerelease']
+          assets={a['name']:a for a in release['assets']}
+          primary='StreamBrief-User-Guide.html'
+          assert primary in assets
+          protected={a['name']:(a['id'],a['size'],a['digest']) for a in release['assets'] if a['name']!=primary}
+          template=Path('guides/StreamBrief-User-Guide.template.html').read_text(encoding='utf-8')
+          content=template.replace('__PACKAGE_VERSION__',html.escape(version)).replace('__DISPLAY_VERSION__',html.escape(display))
+          assert '__PACKAGE_VERSION__' not in content and '__DISPLAY_VERSION__' not in content
+          assert '<html lang="ko">' in content and '안내서 검색' in content
+          payload=content.encode('utf-8');expected='sha256:'+hashlib.sha256(payload).hexdigest()
+          original=assets[primary];archived=None
+          def rename(asset,name,label):
+              return json.loads(gh('api','--method','PATCH',f'repos/{repo}/releases/assets/{asset["id"]}','-f','name='+name,'-f','label='+label))
+          if original['digest']!=expected:
+              staged='StreamBrief-User-Guide-staged-'+expected[-12:]+'.html'
+              path=Path(staged);path.write_bytes(payload)
+              if staged not in assets:
+                  gh('release','upload',tag,'--repo',repo,str(path))
+              staged_asset=next(a for a in fetch()['assets'] if a['name']==staged)
+              assert staged_asset['digest']==expected and staged_asset['size']==len(payload)
+              archived='StreamBrief-User-Guide-previous.html'
+              if archived in assets:archived=f'StreamBrief-User-Guide-previous-{original["id"]}.html'
+              rename(original,archived,'이전 사용 가이드 · 한 페이지 형식 (HTML)')
+              try:
+                  rename(staged_asset,primary,'사용 가이드 · 항목별 안내 (HTML)')
+              except Exception:
+                  rename(original,primary,original.get('label') or '')
+                  raise
+          else:
+              rename(original,primary,'사용 가이드 · 항목별 안내 (HTML)')
+          if 'StreamBrief-User-Guide.md' in assets:
+              rename(assets['StreamBrief-User-Guide.md'],'StreamBrief-User-Guide.md','사용 가이드 · 텍스트형 (기존)')
+          final=fetch();updated={a['name']:a for a in final['assets']}
+          assert updated[primary]['digest']==expected and updated[primary]['size']==len(payload)
+          for name,identity in protected.items():
+              a=updated[name];assert (a['id'],a['size'],a['digest'])==identity,name
+          if archived:assert updated[archived]['id']==original['id'] and updated[archived]['digest']==original['digest']
+          link=f'https://github.com/{repo}/releases/download/{tag}/{primary}'
+          section=f'사용 가이드: [항목별 HTML 안내서 다운로드]({link})\n\n내려받아 더블클릭하면 목차에서 필요한 항목만 골라 볼 수 있습니다. 검색·글자 확대·인쇄를 지원하며 인터넷 없이도 사용할 수 있습니다. 이전 한 페이지 안내서는 첨부파일에 별도 보관합니다.\n'
+          body=final.get('body') or ''
+          if '[항목별 HTML 안내서 다운로드]' not in body:
+              notes=Path('updated-release-notes.md');notes.write_text(section+'\n'+body,encoding='utf-8')
+              gh('release','edit',tag,'--repo',repo,'--notes-file',str(notes))
+          print(json.dumps({'guide':link,'bytes':len(payload),'digest':expected,'previous_guide':archived,'other_release_assets_preserved':True},ensure_ascii=False))
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as out:
+              out.write(f'User guide updated: {link}\n\nPrevious guides and installer/update binaries preserved.\n')

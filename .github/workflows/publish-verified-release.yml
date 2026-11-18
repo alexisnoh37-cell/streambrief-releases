@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - uses: actions/checkout@v4
       - name: Verify and publish the binary distribution
         env:
           ARTIFACT_URL: ${{ inputs.artifact_url }}
@@ -33,7 +34,7 @@ jobs:
           DISTRIBUTION_REPOSITORY: ${{ github.repository }}
         shell: python
         run: |
-          import hashlib,json,os,re,subprocess,urllib.request,urllib.parse,zipfile
+          import hashlib,html,json,os,re,subprocess,urllib.request,urllib.parse,zipfile
           from pathlib import Path
           url=os.environ['ARTIFACT_URL']
           print('::add-mask::'+url,flush=True)
@@ -83,6 +84,9 @@ jobs:
           report=json.loads((folder/'StreamBrief-Validation.json').read_text(encoding='utf-8-sig'))
           checks=['ok','installed_exe_self_check','frozen_tk_and_local_web_server','frozen_readonly_mcp_gateway','native_small_and_turbo_smoke','aac_ts_and_mp4_audio_conversion','update_preserved_transcript_and_memo','update_preserved_ai_identity','uninstall_preserved_records_and_models','real_update_handoff_waited_for_exit','failed_update_preserved_program','application_update_excludes_model_payload']
           assert all(report.get(key) is True for key in checks)
+          template=Path('guides/StreamBrief-User-Guide.template.html').read_text(encoding='utf-8')
+          guide=template.replace('__PACKAGE_VERSION__',html.escape(version)).replace('__DISPLAY_VERSION__',html.escape(display))
+          (folder/'StreamBrief-User-Guide.html').write_text(guide,encoding='utf-8')
           local={}
           for path in folder.iterdir():
               with path.open('rb') as stream:local[path.name]=hashlib.file_digest(stream,'sha256').hexdigest()
@@ -106,10 +110,12 @@ jobs:
           matching=[r for r in json.loads(gh('api',f'repos/{repo}/releases?per_page=100')) if r['tag_name']==tag]
           assert len(matching)==1
           release=matching[0]
-          assert len(release['assets'])==len(local)
-          for asset in release['assets']:
+          active_assets=[a for a in release['assets'] if not re.fullmatch(r'StreamBrief-User-Guide-previous(?:-[0-9]+)?\.html',a['name'])]
+          assert len(active_assets)==len(local)
+          for asset in active_assets:
               assert asset['name'] in local and asset['digest']=='sha256:'+local[asset['name']],asset['name']
           if release['draft']:gh('release','edit',tag,'--repo',repo,'--draft=false','--latest')
           with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as summary:
               summary.write(f"Published: {release['html_url']}\n\nArchive, both executables, all upload digests and Windows checks verified.\n")
           print(json.dumps({'published':release['html_url'],'checks':{key:True for key in checks},'files':metadata['files']},ensure_ascii=False))
+
