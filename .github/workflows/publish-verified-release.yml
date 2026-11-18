@@ -89,7 +89,8 @@ jobs:
               return result.stdout
           tag='v'+version
           releases=json.loads(gh('api',f'repos/{repo}/releases'))
-          assert not any(r['tag_name']==tag for r in releases),'Published versions are never overwritten'
+          existing=[r for r in releases if r['tag_name']==tag]
+          assert len(existing)<=1
           notes=Path('release-notes.md')
           notes.write_text(f'''StreamBrief {display}
 
@@ -103,15 +104,17 @@ jobs:
 
           Windows 실제 설치·업데이트·두 모델의 짧은 음성 인식·자료 보존 자동 검증을 통과했습니다. 설치 파일은 미서명입니다. 실제 8GB PC 장시간 사용과 실제 GPT·Claude 계정 연결은 별도 확인 대상입니다.
           ''',encoding='utf-8')
-          gh('release','create',tag,'--repo',repo,'--target','main','--draft','--title','StreamBrief '+display,'--notes-file',str(notes))
-          gh('release','upload',tag,'--repo',repo,*[str(p) for p in sorted(folder.iterdir())])
+          if not existing:
+              gh('release','create',tag,'--repo',repo,'--target','main','--draft','--title','StreamBrief '+display,'--notes-file',str(notes))
+              gh('release','upload',tag,'--repo',repo,*[str(p) for p in sorted(folder.iterdir())])
+          # Existing versions are verified in place; files are never replaced.
           matching=[r for r in json.loads(gh('api',f'repos/{repo}/releases?per_page=100')) if r['tag_name']==tag]
           assert len(matching)==1
           release=matching[0]
           assert len(release['assets'])==len(local)
           for asset in release['assets']:
               assert asset['name'] in local and asset['digest']=='sha256:'+local[asset['name']],asset['name']
-          gh('release','edit',tag,'--repo',repo,'--draft=false','--latest')
+          if release['draft']:gh('release','edit',tag,'--repo',repo,'--draft=false','--latest')
           with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as summary:
               summary.write(f"Published: {release['html_url']}\n\nArchive, both executables, all upload digests and Windows checks verified.\n")
           print(json.dumps({'published':release['html_url'],'checks':{key:True for key in checks},'files':metadata['files']},ensure_ascii=False))
