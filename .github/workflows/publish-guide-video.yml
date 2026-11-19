@@ -1,0 +1,64 @@
+name: Add 60-second guide video to a release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published release to receive the existing 60-second guide
+        required: true
+        default: v1.0.10
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: release-guide-video
+  cancel-in-progress: false
+jobs:
+  video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Upload the existing video and link it without changing other assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+        shell: python
+        run: |
+          import hashlib,json,os,re,subprocess
+          from pathlib import Path
+          repo=os.environ['REPOSITORY'];tag=os.environ['RELEASE_TAG']
+          assert repo=='alexisnoh37-cell/streambrief-releases'
+          assert re.fullmatch(r'v\d+\.\d+\.\d+',tag)
+          path=Path('guides/StreamBrief-Quick-Guide-60s.mp4')
+          name=path.name;size=path.stat().st_size
+          digest='sha256:'+hashlib.sha256(path.read_bytes()).hexdigest()
+          assert size==8965881
+          assert digest=='sha256:a72b1353eae3ea89619651ced0de108c0942327bb6c0a87f51980226a9aaba2f'
+          def gh(*args):
+              result=subprocess.run(['gh',*args],capture_output=True,text=True)
+              if result.returncode:raise RuntimeError(result.stderr[:1000])
+              return result.stdout
+          def fetch():return json.loads(gh('api',f'repos/{repo}/releases/tags/{tag}'))
+          release=fetch()
+          assert not release['draft'] and not release['prerelease']
+          protected={a['name']:(a['id'],a['size'],a['digest']) for a in release['assets'] if a['name']!=name}
+          existing=[a for a in release['assets'] if a['name']==name]
+          if existing:
+              assert len(existing)==1 and existing[0]['digest']==digest and existing[0]['size']==size
+          else:
+              gh('release','upload',tag,'--repo',repo,str(path)+'#사용법 설명영상 · 60초')
+          final=fetch();assets={a['name']:a for a in final['assets']}
+          assert assets[name]['digest']==digest and assets[name]['size']==size
+          for key,identity in protected.items():
+              a=assets[key];assert (a['id'],a['size'],a['digest'])==identity,key
+          link=f'https://github.com/{repo}/releases/download/{tag}/{name}'
+          body=final.get('body') or ''
+          if link not in body:
+              notes=Path('release-notes-with-video.md')
+              notes.write_text('사용법 설명영상: [▶ 60초 영상 보기·다운로드]('+link+')\n\n'+body,encoding='utf-8')
+              gh('release','edit',tag,'--repo',repo,'--notes-file',str(notes))
+          assert link in fetch()['body']
+          print(json.dumps({'video':link,'bytes':size,'digest':digest,'other_release_assets_preserved':True},ensure_ascii=False))
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as summary:
+              summary.write(f'60-second guide uploaded: {link}\n\nExisting installers, update metadata and guides preserved.\n')
