@@ -1,0 +1,64 @@
+name: Publish user download page
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'scripts/build_download_page.py'
+      - 'tests/test_download_page.py'
+      - '.github/workflows/download-page.yml'
+  workflow_dispatch:
+  # A release created by GITHUB_TOKEN does not trigger release.published.
+  # Watch the verified publishing workflows as well, including the guide upload.
+  workflow_run:
+    workflows:
+      - Publish verified Windows distribution
+      - Add 60-second guide video to a release
+    types: [completed]
+  release:
+    types: [published]
+  schedule:
+    - cron: '15 20 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: user-download-page
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+      - name: Test download page generation
+        run: python3 -m unittest discover -s tests -p 'test_download_page.py' -v
+      - name: Read the latest published release and render the approved page
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISTRIBUTION_REPOSITORY: ${{ github.repository }}
+        run: |
+          mkdir -p build
+          gh api "repos/$DISTRIBUTION_REPOSITORY/releases/latest" > build/latest-release.json
+          python3 scripts/build_download_page.py --release-json build/latest-release.json
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
