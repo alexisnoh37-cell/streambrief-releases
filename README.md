@@ -9,7 +9,9 @@
 ## 설치와 업데이트
 
 - 처음 사용할 때는 [최신 배포 페이지](https://github.com/alexisnoh37-cell/streambrief-releases/releases/latest)의 **StreamBrief-버전-Setup.exe**를 받으세요. Small·Large 모델과 필요한 실행 도구가 포함됩니다.
-- 이후 새 버전은 StreamBrief 실행 창의 **업데이트 확인 → 업데이트**로 받습니다. 회의 기록·메모·모델·AI 연결 설정은 보존합니다.
+- 1.12부터는 실행 시 새 버전과 변경 내용을 자동으로 알려주며, **업데이트 / 나중에**를 선택할 수 있습니다. 직접 확인하려면 실행 창이나 트레이 메뉴의 **업데이트 확인**을 누르세요. 회의 기록·메모·모델·AI 연결 설정은 보존합니다.
+- 실행 창의 **X**는 트레이로 숨기며 기록·AI 연결은 유지합니다. 트레이 아이콘에서 다시 열거나 **프로그램 종료**를 선택하세요.
+- 공통 AI 연결을 한 번 켜면 **30일 동안 재실행 시 자동 연결**합니다. 기존 사용자는 업데이트 후 한 번 직접 켜면 적용되며, **내 PC 연결**에서 종료일 확인·해제가 가능합니다.
 - **Update.exe는 기존에 설치한 프로그램의 업데이트용**입니다. 처음 설치할 때는 Setup.exe를 선택하세요.
 - [항목별 사용 가이드(HTML) 다운로드](https://github.com/alexisnoh37-cell/streambrief-releases/releases/latest/download/StreamBrief-User-Guide.html): 내려받아 더블클릭하면 목차별 안내·검색·AI 연결 순서를 볼 수 있습니다. 인터넷 없이도 열 수 있습니다.
 - [60초 설명영상](https://github.com/alexisnoh37-cell/streambrief-releases/releases/latest/download/StreamBrief-Quick-Guide-60s.mp4)으로 기본 사용 순서를 확인할 수 있습니다. 앱 왼쪽의 **사용방법 튜토리얼**에서는 단계별 안내를 따라 하거나 건너뛸 수 있습니다.
