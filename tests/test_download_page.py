@@ -25,7 +25,8 @@ class DownloadPageTests(unittest.TestCase):
         self.assertIn('약 791 MB', page)
         self.assertIn('약 62 MB', page)
         self.assertNotIn('<span class="preview">', page)
-        self.assertLess(page.index('<aside class="privacy-strip"'), page.index('<div class="quick-links"'))
+        self.assertLess(page.index('<div class="quick-links"'), page.index('<aside class="privacy-strip"'))
+        self.assertLess(page.index('<aside class="privacy-strip"'), page.index('<aside class="live-notice"'))
 
     def test_next_release_updates_every_versioned_link_and_label(self):
         page = render(release('1.0.12', '1.12'))
