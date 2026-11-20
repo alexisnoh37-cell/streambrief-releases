@@ -82,11 +82,15 @@ jobs:
           assert manifest['update']=={'url':f'https://github.com/{repo}/releases/download/v{version}/{update_name}','size':update['bytes'],'sha256':update['sha256']}
           assert isinstance(manifest['notes'],str) and len(manifest['notes'])<12000
           report=json.loads((folder/'StreamBrief-Validation.json').read_text(encoding='utf-8-sig'))
-          checks=['ok','installed_exe_self_check','frozen_tk_and_local_web_server','frozen_readonly_mcp_gateway','native_small_and_turbo_smoke','aac_ts_and_mp4_audio_conversion','update_preserved_transcript_and_memo','update_preserved_ai_identity','uninstall_preserved_records_and_models','real_update_handoff_waited_for_exit','failed_update_preserved_program','application_update_excludes_model_payload']
+          checks=['ok','installed_exe_self_check','frozen_tk_and_local_web_server','frozen_tray_hide_restore','frozen_update_notice','frozen_readonly_mcp_gateway','native_small_and_turbo_smoke','aac_ts_and_mp4_audio_conversion','update_preserved_transcript_and_memo','update_preserved_ai_identity','uninstall_preserved_records_and_models','real_update_handoff_waited_for_exit','failed_update_preserved_program','application_update_excludes_model_payload']
           assert all(report.get(key) is True for key in checks)
           template=Path('guides/StreamBrief-User-Guide.template.html').read_text(encoding='utf-8')
           guide=template.replace('__PACKAGE_VERSION__',html.escape(version)).replace('__DISPLAY_VERSION__',html.escape(display))
           (folder/'StreamBrief-User-Guide.html').write_text(guide,encoding='utf-8')
+          # Include the revised guide video before publication so Pages sees a complete release.
+          video=Path('guides/StreamBrief-Quick-Guide-60s.mp4')
+          assert video.is_file() and 0<video.stat().st_size<50*1024**2
+          (folder/video.name).write_bytes(video.read_bytes())
           local={}
           for path in folder.iterdir():
               with path.open('rb') as stream:local[path.name]=hashlib.file_digest(stream,'sha256').hexdigest()
