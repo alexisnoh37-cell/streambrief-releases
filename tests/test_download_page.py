@@ -54,6 +54,17 @@ class DownloadPageTests(unittest.TestCase):
                      'StreamBrief-User-Guide.html', 'StreamBrief-Quick-Guide-60s.mp4']:
             self.assertIn(f'/download/v1.0.12/{name}', page)
 
+    def test_refreshed_1_13_uses_new_tag_but_keeps_label_and_manual_download_names(self):
+        data=release('1.0.14','1.13')
+        data['assets'].append({'name':'StreamBrief-1.14-Update.exe','size':64847255,'browser_download_url':f'https://github.com/{REPOSITORY}/releases/download/v1.0.14/StreamBrief-1.14-Update.exe'})
+        page=render(data)
+        self.assertIn('최신 버전 1.13',page)
+        self.assertNotIn('최신 버전 1.14',page)
+        self.assertIn('/download/v1.0.14/StreamBrief-1.13-Setup.exe',page)
+        self.assertIn('/download/v1.0.14/StreamBrief-1.13-Update.exe',page)
+        self.assertNotIn('StreamBrief-1.14-Update.exe',page)
+        self.assertIn('별도 안내 팝업 없이',page)
+
     def test_incomplete_or_unpublished_release_cannot_replace_the_page(self):
         for change in ['draft', 'prerelease', 'missing_update', 'missing_video', 'duplicate_asset', 'bad_size']:
             with self.subTest(change=change):
