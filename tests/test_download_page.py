@@ -1,7 +1,11 @@
 import copy
 import unittest
+import json
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 
-from scripts.build_download_page import REPOSITORY, release_values, render
+from scripts.build_download_page import REPOSITORY, ROOT, release_values, render, main
 
 
 def release(version='1.0.11', display='1.11'):
@@ -18,6 +22,8 @@ class DownloadPageTests(unittest.TestCase):
     def test_current_release_keeps_approved_copy_and_distinct_actions(self):
         page = render(release())
         self.assertIn('최신 버전 1.11', page)
+        self.assertIn('<script src="./metrics.js" defer></script>', page)
+        self.assertIn('방문자 식별자 없이', page)
         self.assertIn('Windows 설치용 파일 받기', page)
         self.assertIn('Windows 업데이트용 파일 받기', page)
         self.assertIn('이미 설치하셨나요?', page)
@@ -27,6 +33,17 @@ class DownloadPageTests(unittest.TestCase):
         self.assertNotIn('<span class="preview">', page)
         self.assertLess(page.index('<div class="quick-links"'), page.index('<aside class="privacy-strip"'))
         self.assertLess(page.index('<aside class="privacy-strip"'), page.index('<aside class="live-notice"'))
+
+    def test_site_output_contains_the_statistics_script_referenced_by_the_page(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / 'release.json'
+            source.write_text(json.dumps(release()), encoding='utf-8')
+            output = root / 'site'
+            with patch('sys.argv', ['build_download_page', '--release-json', str(source), '--output', str(output)]):
+                main()
+            self.assertEqual((output / 'metrics.js').read_bytes(), (ROOT / 'site' / 'metrics.js').read_bytes())
+            self.assertIn('./metrics.js', (output / 'index.html').read_text(encoding='utf-8'))
 
     def test_next_release_updates_every_versioned_link_and_label(self):
         page = render(release('1.0.12', '1.12'))

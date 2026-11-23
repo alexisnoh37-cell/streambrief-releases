@@ -37,6 +37,8 @@ jobs:
           ref: main
       - name: Test download page generation
         run: python3 -m unittest discover -s tests -p 'test_download_page.py' -v
+      - name: Test anonymous page events
+        run: node --test tests/test_metrics.cjs
       - name: Read the latest published release and render the approved page
         env:
           GH_TOKEN: ${{ github.token }}
