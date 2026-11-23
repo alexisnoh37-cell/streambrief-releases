@@ -12,5 +12,5 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
-      - run: python3 -m unittest discover -s tests -p 'test_download_page.py' -v
+      - run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - run: node --test tests/test_metrics.cjs
