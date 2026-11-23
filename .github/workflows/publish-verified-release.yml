@@ -34,14 +34,13 @@ jobs:
           DISTRIBUTION_REPOSITORY: ${{ github.repository }}
         shell: python
         run: |
-          import hashlib,html,json,os,re,subprocess,urllib.request,urllib.parse,zipfile
+          import hashlib,html,json,os,re,subprocess,urllib.request,urllib.parse,zipfile,sys
           from pathlib import Path
           url=os.environ['ARTIFACT_URL']
           print('::add-mask::'+url,flush=True)
-          parsed=urllib.parse.urlsplit(url)
-          assert parsed.scheme=='https' and re.fullmatch(r'productionresults[a-z0-9]+\.blob\.core\.windows\.net',parsed.hostname or '')
-          assert not parsed.username and not parsed.password and parsed.port in (None,443)
-          assert parsed.path.startswith('/actions-results/') and not parsed.fragment
+          sys.path.insert(0,str(Path.cwd()))
+          from scripts.distribution_source import validate_source
+          validate_source(url)
           expected=os.environ['ARTIFACT_SHA256'].removeprefix('sha256:')
           assert re.fullmatch('[0-9a-f]{64}',expected)
           assert re.fullmatch('[0-9a-f]{40}',os.environ['SOURCE_COMMIT'])
