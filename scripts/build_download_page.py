@@ -63,6 +63,7 @@ def main():
     page = render(release)
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / 'index.html').write_text(page, encoding='utf-8')
+    (args.output / 'metrics.js').write_bytes((ROOT / 'site' / 'metrics.js').read_bytes())
     (args.output / '.nojekyll').write_text('', encoding='utf-8')
     print('Download page rendered for ' + release['tag_name'])
 

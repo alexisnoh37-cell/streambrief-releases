@@ -18,6 +18,8 @@ class DownloadPageTests(unittest.TestCase):
     def test_current_release_keeps_approved_copy_and_distinct_actions(self):
         page = render(release())
         self.assertIn('최신 버전 1.11', page)
+        self.assertIn('<script src="./metrics.js" defer></script>', page)
+        self.assertIn('방문자 식별자 없이', page)
         self.assertIn('Windows 설치용 파일 받기', page)
         self.assertIn('Windows 업데이트용 파일 받기', page)
         self.assertIn('이미 설치하셨나요?', page)
