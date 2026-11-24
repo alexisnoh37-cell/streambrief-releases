@@ -40,6 +40,7 @@ jobs:
           print('::add-mask::'+url,flush=True)
           sys.path.insert(0,str(Path.cwd()))
           from scripts.distribution_source import validate_source
+          from scripts.release_identity import prepare_compatible_update
           validate_source(url)
           expected=os.environ['ARTIFACT_SHA256'].removeprefix('sha256:')
           assert re.fullmatch('[0-9a-f]{64}',expected)
@@ -78,7 +79,7 @@ jobs:
           update_name=f'StreamBrief-{display}-Update.exe'
           update=metadata['files'][update_name]
           assert manifest['schema']==1 and manifest['version']==version and manifest['distribution_repository']==repo
-          assert manifest['update']=={'url':f'https://github.com/{repo}/releases/download/v{version}/{update_name}','size':update['bytes'],'sha256':update['sha256']}
+          compatibility_name=prepare_compatible_update(folder,metadata,manifest)
           assert isinstance(manifest['notes'],str) and len(manifest['notes'])<12000
           report=json.loads((folder/'StreamBrief-Validation.json').read_text(encoding='utf-8-sig'))
           checks=['ok','installed_exe_self_check','frozen_tk_and_local_web_server','frozen_tray_hide_restore','frozen_update_notice','frozen_readonly_mcp_gateway','native_small_and_turbo_smoke','aac_ts_and_mp4_audio_conversion','update_preserved_transcript_and_memo','update_preserved_ai_identity','uninstall_preserved_records_and_models','real_update_handoff_waited_for_exit','failed_update_preserved_program','application_update_excludes_model_payload']
@@ -96,6 +97,7 @@ jobs:
           for name,entry in metadata['files'].items():
               assert (folder/name).stat().st_size==entry['bytes'] and local[name]==entry['sha256']
               assert f'{local[name]}  {name}' in (folder/'SHA256SUMS.txt').read_text(encoding='ascii')
+          assert local[compatibility_name]==update['sha256'] and (folder/compatibility_name).stat().st_size==update['bytes']
           def gh(*args):
               result=subprocess.run(['gh',*args],capture_output=True,text=True)
               if result.returncode:raise RuntimeError(result.stderr[:1000])
@@ -105,7 +107,7 @@ jobs:
           existing=[r for r in releases if r['tag_name']==tag]
           assert len(existing)<=1
           notes=Path('release-notes.md')
-          notes.write_text(manifest['notes'],encoding='utf-8')
+          assert notes.is_file() and 0<len(notes.read_text(encoding='utf-8'))<20000,'Public release description must be separate from concise in-app notes'
           if not existing:
               gh('release','create',tag,'--repo',repo,'--target','main','--draft','--title','StreamBrief '+display,'--notes-file',str(notes))
               gh('release','upload',tag,'--repo',repo,*[str(p) for p in sorted(folder.iterdir())])

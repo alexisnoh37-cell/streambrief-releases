@@ -39,3 +39,7 @@ GitHub 파일 다운로드 누계는 관리자 인증 후 중계서버가 최대
 ## 검증된 빌드 전달
 
 비공개 소스 저장소에서 실제 Windows 설치·업데이트 검증을 마친 8개 배포 파일만 전달합니다. Actions artifact 용량 한도가 있는 경우 비공개 draft release의 ZIP을 임시 경로로 사용합니다. 공개 게시 workflow는 고정 Azure artifact 또는 해당 소스 저장소의 GitHub release-assets CDN 주소만 허용하고, 전달 ZIP SHA256·source_commit·파일 목록·설치 검증 보고서·각 EXE 크기/해시를 검증합니다. 비공개 소스·사용자 자료는 공개 저장소로 옮기지 않습니다.
+
+### 1.13 수정 배포
+
+사용자 표시·다운로드 파일명은 1.13, 내부 패키지 태그는 v1.0.14입니다. 기존 앱의 숫자 파일명 계약을 위한 동일 바이너리 StreamBrief-1.14-Update.exe도 게시합니다. 페이지의 설치·수동 업데이트 버튼은 1.13 파일을 사용합니다. 앱의 짧은 변경 요약은 update-info.json에, 공개 배포 설명은 release-notes.md에 따로 관리합니다. 기존 v1.0.13 파일을 덮어쓰지 않습니다.
