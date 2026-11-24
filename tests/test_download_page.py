@@ -55,15 +55,17 @@ class DownloadPageTests(unittest.TestCase):
             self.assertIn(f'/download/v1.0.12/{name}', page)
 
     def test_refreshed_1_13_uses_new_tag_but_keeps_label_and_manual_download_names(self):
-        data=release('1.0.14','1.13')
-        data['assets'].append({'name':'StreamBrief-1.14-Update.exe','size':64847255,'browser_download_url':f'https://github.com/{REPOSITORY}/releases/download/v1.0.14/StreamBrief-1.14-Update.exe'})
+        data=release('1.0.15','1.13')
+        data['assets'].append({'name':'StreamBrief-1.15-Update.exe','size':64847255,'browser_download_url':f'https://github.com/{REPOSITORY}/releases/download/v1.0.15/StreamBrief-1.15-Update.exe'})
         page=render(data)
         self.assertIn('최신 버전 1.13',page)
         self.assertNotIn('최신 버전 1.14',page)
-        self.assertIn('/download/v1.0.14/StreamBrief-1.13-Setup.exe',page)
-        self.assertIn('/download/v1.0.14/StreamBrief-1.13-Update.exe',page)
-        self.assertNotIn('StreamBrief-1.14-Update.exe',page)
-        self.assertIn('별도 안내 팝업 없이',page)
+        self.assertIn('/download/v1.0.15/StreamBrief-1.13-Setup.exe',page)
+        self.assertIn('/download/v1.0.15/StreamBrief-1.13-Update.exe',page)
+        self.assertNotIn('StreamBrief-1.15-Update.exe',page)
+        self.assertIn('고정 높이의 스크롤 영역',page)
+        self.assertIn('업데이트 버튼은 창 하단에 항상 표시',page)
+        self.assertIn('Windows 알림',page)
 
     def test_incomplete_or_unpublished_release_cannot_replace_the_page(self):
         for change in ['draft', 'prerelease', 'missing_update', 'missing_video', 'duplicate_asset', 'bad_size']:
