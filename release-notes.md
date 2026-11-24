@@ -10,21 +10,21 @@ GPT·Claude에 기록을 활용하려면 사용자가 직접 연결하고 **AI�
 
 **📥 처음 사용하시나요?**
 
-[처음 설치하기 · Setup.exe](https://github.com/alexisnoh37-cell/streambrief-releases/releases/download/v1.0.14/StreamBrief-1.13-Setup.exe)
+[처음 설치하기 · Setup.exe](https://github.com/alexisnoh37-cell/streambrief-releases/releases/download/v1.0.15/StreamBrief-1.13-Setup.exe)
 
 프로그램과 Small·Large 음성 인식 모델을 함께 설치합니다. 설치 후 바탕화면의 **StreamBrief**를 실행하세요.
 
 **🔄 이미 설치하셨나요?**
 
-프로그램을 실행하면 최신 버전을 자동으로 확인합니다. 별도 팝업 없이 실행 창의 **업데이트 확인·변경 내용** 버튼 아래에 간단한 변경사항이 표시됩니다. **업데이트**를 누르면 다운로드·검증을 시작합니다. 지금 업데이트하지 않으려면 버튼을 누르지 않고 계속 사용하세요. 진행 상태와 실패 이유도 같은 창에서 확인할 수 있습니다.
+프로그램을 실행하면 최신 버전을 자동으로 확인하고, 실행 중에는 **1시간 간격**으로 다시 확인합니다. 변경사항은 **고정 높이의 스크롤 영역**에 표시하고 **업데이트 버튼은 창 하단에 항상 표시**합니다. 창이 숨겨져 있거나 다른 프로그램을 보고 있으면 Windows 알림을 한 번 표시하며, 알림을 누르면 실행 창만 엽니다. **업데이트**를 누르면 다운로드·검증을 시작합니다. Windows 알림 설정·집중 모드에 따라 알림이 표시되지 않을 수 있지만 실행 창의 안내는 유지됩니다.
 
-업데이트가 되지 않으면 StreamBrief를 종료한 뒤 [수동 업데이트 · Update.exe](https://github.com/alexisnoh37-cell/streambrief-releases/releases/download/v1.0.14/StreamBrief-1.13-Update.exe)를 내려받아 실행하세요.
+업데이트가 되지 않으면 StreamBrief를 종료한 뒤 [수동 업데이트 · Update.exe](https://github.com/alexisnoh37-cell/streambrief-releases/releases/download/v1.0.15/StreamBrief-1.13-Update.exe)를 내려받아 실행하세요.
 
 **기존 회의 기록·제목·메모·모델·AI 연결 설정은 유지됩니다.**
 
 **🎬 사용 방법을 확인하세요**
 
-[▶ 60초 설명영상](https://github.com/alexisnoh37-cell/streambrief-releases/releases/download/v1.0.14/StreamBrief-Quick-Guide-60s.mp4)　｜　[📖 항목별 사용 안내서](https://github.com/alexisnoh37-cell/streambrief-releases/releases/download/v1.0.14/StreamBrief-User-Guide.html)
+[▶ 60초 설명영상](https://github.com/alexisnoh37-cell/streambrief-releases/releases/download/v1.0.15/StreamBrief-Quick-Guide-60s.mp4)　｜　[📖 항목별 사용 안내서](https://github.com/alexisnoh37-cell/streambrief-releases/releases/download/v1.0.15/StreamBrief-User-Guide.html)
 
 사용 안내서는 내려받아 열면 목차·검색·글자 확대 기능을 이용할 수 있습니다.
 
@@ -75,7 +75,8 @@ AI 연결은 선택 기능입니다. 연결 없이도 회의 기록과 파일 �
 - 회의 기록 목록 오른쪽에 **기록을 처음 시작한 날짜·시간(한국시간)**을 표시합니다.
 - **AI에 공유**를 **ON/OFF 토글**로 바꿨습니다. ON은 확인 팝업 후 공유하며, OFF는 해당 기록의 공유를 해제합니다.
 - 다시 열어도 실제 공유 상태를 표시하고, 공유 성공을 알리는 하단 문구는 제거했습니다. 연결 안내와 공유 확인 팝업은 유지합니다.
-- 업데이트 변경사항을 별도 팝업 없이 실행 창의 **업데이트 확인·변경 내용** 버튼 아래에 간단히 표시합니다.
+- 업데이트 변경사항을 **고정 높이의 스크롤 영역**에 표시하고 **업데이트 버튼을 창 하단에 고정**해 내역이 길어져도 버튼이 가려지지 않도록 했습니다.
+- 실행 시와 1시간 간격으로 새 버전을 확인하고, 창 하단·제목·트레이 툴팁과 Windows 알림으로 안내합니다. 알림 클릭은 실행 창만 열며 설치는 업데이트 버튼을 눌러 시작합니다.
 - **업데이트** 버튼 한 번으로 다운로드·검증을 시작하고, 진행 상태와 실패 이유를 같은 창에서 확인할 수 있습니다. 실패 후 다시 시도할 수 있도록 개선했습니다.
 - 항목별 사용 안내서와 다운로드 페이지를 새 화면에 맞췄습니다. 30일 자동 AI 연결·트레이 실행은 계속 사용할 수 있습니다.
 
